@@ -68,7 +68,7 @@ class _RegisterPageState extends State<RegisterPage> {
                   const SnackBar(
                     backgroundColor: Color(0xFF5785A9),
                     content: Text('Регистрация прошла успешно')));
-              Navigator.of(context).pop();
+              Navigator.pushReplacementNamed(context,'home_page');
             }
           },
           child: BlocBuilder<AuthBloc, AuthState>(
@@ -204,7 +204,7 @@ class _RegisterPageState extends State<RegisterPage> {
                 return const Center(child: Text("ERORR"));
               }
               if (state is AuthSuccess) {
-                return const Center(child: Text('Success'));
+              
               }
 
               return Column(

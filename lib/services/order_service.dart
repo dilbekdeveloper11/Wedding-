@@ -9,7 +9,7 @@ import '../utils/constants.dart';
 class OrderService {
   Dio dio = Dio();
   final String path = Constants.BASE_URL;
-  TokenDataProvider _tokenProvider = TokenDataProvider();
+  final TokenDataProvider _tokenProvider = TokenDataProvider();
 
   Future<Order> sendOrder(int id, List serives) async {
     final url = '$path/service/order/';
@@ -26,6 +26,10 @@ class OrderService {
           'Authorization': 'Bearer $token',
         }),
       );
+
+      if (response.statusCode == 500) {
+        throw Exception('already exists');
+      }
       final data = response.data;
       return Order.fromJson(data);
     } catch (e) {

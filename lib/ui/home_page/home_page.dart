@@ -32,7 +32,7 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  TokenDataProvider _tokenProvider = TokenDataProvider();
+  final TokenDataProvider _tokenProvider = TokenDataProvider();
 
   int _selectedEvent = 0;
   int _selectedLocation = 0;
@@ -54,6 +54,7 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    print("Scaffold build");
     return Scaffold(
       body: MultiBlocProvider(
         providers: [
@@ -91,11 +92,7 @@ class _HomePageState extends State<HomePage> {
                         MaterialPageRoute(
                           builder: (context) => const RegisterPage(),
                         ),
-                      ).then((value) {
-                        context
-                            .read<LocationBloc>()
-                            .add(LocationLoad(_selectedEventId ?? 1));
-                      });
+                      );
                     },
                     icon: const Icon(
                       Icons.person,
@@ -109,6 +106,7 @@ class _HomePageState extends State<HomePage> {
                 height: MediaQuery.of(context).size.height - 56.h,
                 child: BlocBuilder<BaseBloc, BaseState>(
                   builder: (context, state) {
+                    print("BASE build");
                     if (state is BaseLoading) {
                       return Shimmer.fromColors(
                         baseColor: Colors.grey[400]!,
@@ -172,6 +170,7 @@ class _HomePageState extends State<HomePage> {
             SliverToBoxAdapter(
               child: BlocBuilder<GaleryBloc, GaleryState>(
                 builder: (context, state) {
+                  print("Galery build");
                   if (state is GaleryLoading) {
                     return SizedBox(
                       height: 280.h,
@@ -248,6 +247,7 @@ class _HomePageState extends State<HomePage> {
             SliverToBoxAdapter(
               child: BlocBuilder<EventBloc, EventState>(
                 builder: (context, state) {
+                  print("Event build");
                   if (state is EventLoading) {
                     return SizedBox(
                       height: 280.h,
@@ -279,7 +279,7 @@ class _HomePageState extends State<HomePage> {
                     );
                   }
                   if (state is EventErorr) {
-                    return const Center(child: Text("ERORR"));
+                    return const Center(child: Text("ERROR"));
                   }
                   if (state is EventLoaded) {
                     if (state.events.isEmpty) {
@@ -302,6 +302,10 @@ class _HomePageState extends State<HomePage> {
                               setState(() {
                                 _selectedEvent = index;
                                 if (_selectedEvent == index) {
+                                  if (token == null) {
+                                    Navigator.pushReplacementNamed(
+                                        context, 'reg_page');
+                                  }
                                   isTapped = !isTapped;
                                   _selectedEventId = event.id;
                                   context
@@ -342,6 +346,7 @@ class _HomePageState extends State<HomePage> {
               child: BlocListener(
                 bloc: BlocProvider.of<AuthBloc>(context),
                 listener: (context, state) {
+                  print("Location listener build");
                   if (state is AuthSuccess) {
                     if (_selectedEventId != null) {
                       context
@@ -352,6 +357,7 @@ class _HomePageState extends State<HomePage> {
                 },
                 child: BlocBuilder<LocationBloc, LocationState>(
                   builder: (context, state) {
+                    print("Location build");
                     if (state is LocationError) {
                       return const Center(child: Text("ERORR"));
                     }
@@ -439,6 +445,7 @@ class _HomePageState extends State<HomePage> {
               child: (token != null && _selectedEventId != null)
                   ? BlocBuilder<ServiceBloc, ServiceState>(
                       builder: (context, state) {
+                        print("Service build");
                         if (state is ServiceLoading) {
                           Shimmer.fromColors(
                             baseColor: Colors.grey[300]!,
@@ -472,12 +479,14 @@ class _HomePageState extends State<HomePage> {
                                 return ServiceCard(
                                   serviceIdList: serviceId,
                                   onTap: () {
-                                    if (serviceId.contains(service.id)) {
-                                      serviceId.remove(service.id);
-                                    } else {
-                                      serviceId.add(service.id);
-                                    }
-                                    setState(() {});
+                                    setState(() {
+                                      print("Service Card build");
+                                      if (serviceId.contains(service.id)) {
+                                        serviceId.remove(service.id);
+                                      } else {
+                                        serviceId.add(service.id);
+                                      }
+                                    });
                                   },
                                   id: service.id,
                                   image: service.image,
@@ -503,23 +512,37 @@ class _HomePageState extends State<HomePage> {
             // ?Order Button
             SliverToBoxAdapter(
               child: (token != null && _selectedEventId != null)
-                  ? BlocBuilder<OrderBloc, OrderState>(
-                      builder: (context, state) {
-                        if (state is OrderLoaded) {
-                          _showDialog(context);
+                  ? BlocListener<OrderBloc,OrderState>(
+                      listener: (context, state) {
+                        if (state is OrderError) {
+                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                              backgroundColor: Colors.red[700],
+                              content: const Text('Нет свободных мест')));
                         }
-                        return OrderButton(onTap: () {
-                          if (_selectedEventId != null &&
-                              serviceId.isNotEmpty) {
-                            context.read<OrderBloc>().add(OrderLoad(
-                                id: _selectedEventId!, serives: serviceId));
-                          } else {
-                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                                backgroundColor: Colors.red[700],
-                                content: const Text('Выберите нужные поля')));
-                          }
-                        });
+                        if (state is OrderLoaded) {
+                         _showDialog(context);
+                        }
                       },
+                      child: BlocBuilder<OrderBloc, OrderState>(
+                        builder: (context, state) {
+                          print("Order build");
+                               if (state is OrderError) {}
+                          if (state is OrderLoaded) {}
+                          return OrderButton(onTap: () {
+                            if (_selectedEventId != null &&
+                                serviceId.isNotEmpty) {
+                              context.read<OrderBloc>().add(OrderLoad(
+                                  id: _selectedEventId!, serives: serviceId));
+                            } else {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                      backgroundColor: Colors.red[700],
+                                      content:
+                                          const Text('Выберите нужные поля')));
+                            }
+                          });
+                        },
+                      ),
                     )
                   : null,
             ),
@@ -533,16 +556,13 @@ class _HomePageState extends State<HomePage> {
   }
 }
 
-_showDialog(BuildContext context) {
-  // ScaffoldMessenger.of(context).showSnackBar(
-  //   const SnackBar(
-  //     backgroundColor: Colors.transparent,
-  //     duration: Duration(milliseconds: 1000),
-  //     content: OrderPopupCard(),
-  //   ),
-  // );
 
-  showDialog(context: context, builder: (_){
-    return OrderPopupCard();
-  });
+_showDialog(BuildContext context) {
+  ScaffoldMessenger.of(context).showSnackBar(
+    const SnackBar(
+      backgroundColor: Colors.transparent,
+      duration: Duration(milliseconds: 1000),
+      content: OrderPopupCard(),
+    ),
+  );
 }
